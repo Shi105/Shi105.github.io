@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despicable Me: Ultimate 50-Quest Trivia</title>
+    <style>
+        :root {
+            --minion-yellow: #ffda00;
+            --minion-blue: #2b5fb3;
+            --dark: #333;
+            --danger: #d32f2f;
+        }
+
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Helvetica', sans-serif;
+            background-color: var(--minion-yellow);
+            color: var(--dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 650px;
+            text-align: center;
+            border: 5px solid var(--dark);
+        }
+
+        .hidden { display: none; }
+
+        /* Buttons */
+        .menu-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 12px 0;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: 3px solid var(--dark);
+            border-radius: 12px;
+            transition: 0.2s;
+            text-transform: uppercase;
+        }
+
+        .play-btn { background: #4CAF50; color: white; }
+        .book-btn { background: var(--minion-blue); color: white; }
+        .quit-btn { background: var(--danger); color: white; }
+        .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
+
+        /* Progress & Score */
+        .progress-container {
+            width: 100%;
+            background: #ddd;
+            border-radius: 20px;
+            height: 25px;
+            margin: 20px 0;
+            border: 2px solid var(--dark);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--minion-blue);
+            transition: width 0.4s ease;
+        }
+
+        .score-box {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--danger);
+            margin-bottom: 10px;
+        }
+
+        /* Quiz Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            border: 2px solid var(--minion-blue);
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .option-btn:hover { background: #e0eaff; border-color: var(--dark); }
+
+        /* Hint Book */
+        #hint-list {
+            text-align: left;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #fffbe6;
+            border: 2px dashed var(--minion-blue);
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            width: 80%;
+            border-radius: 8px;
+            border: 2px solid var(--dark);
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="main-menu">
+            <h1>DESPICABLE ME<br>QUIZ</h1>
+            <button class="menu-btn play-btn" onclick="showSection('intro-screen')">PLAY</button>
+            <button class="menu-btn book-btn" onclick="openBook()">THE HINT BOOK</button>
+            <button class="menu-btn quit-btn" onclick="alert('You cannot escape Gru!')">QUIT</button>
+        </div>
+
+        <div id="intro-screen" class="hidden">
+            <h2>WHO ARE YOU?</h2>
+            <p>Enter your name, recruit:</p>
+            <input type="text" id="player-name" placeholder="First Name Only...">
+            <button class="menu-btn play-btn" onclick="startQuiz()">START MISSION</button>
+        </div>
+
+        <div id="book-screen" class="hidden">
+            <h2>THE SECRET FILES</h2>
+            <p>Study these clues to pass the extreme test:</p>
+            <div id="hint-list"></div>
+            <button class="menu-btn book-btn" onclick="showSection('main-menu')">CLOSE BOOK</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+            <div class="score-box">Points: <span id="current-score">0</span></div>
+            <div class="progress-container"><div id="progress" class="progress-bar"></div></div>
+            <h3 id="question-text">Loading...</h3>
+            <div id="options" class="options-grid"></div>
+        </div>
+
+        <div id="result-screen" class="hidden">
+            <h1 id="result-msg"></h1>
+            <p id="final-stats" style="font-size: 1.5rem;"></p>
+            <button class="menu-btn play-btn" onclick="location.reload()">RETRY MISSION</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            // 1-10
+            { q: "What is Gru's last name?", a: ["Felonious", "Vile", "Margo", "Steal"], c: 0, hint: "It starts with an F!" },
+            { q: "What color are Evil Minions?", a: ["Red", "Purple", "Green", "Black"], c: 1, hint: "Opposite of yellow on a color wheel." },
+            { q: "Which girl is the oldest?", a: ["Agnes", "Edith", "Margo", "Lucy"], c: 2, hint: "She wears glasses." },
+            { q: "What does Agnes want at the carnival?", a: ["Cotton Candy", "A Fluffy Unicorn", "A Rocket", "A Puppy"], c: 1, hint: "IT'S SO FLUFFY!" },
+            { q: "Who is the villain in the first movie?", a: ["El Macho", "Balthazar Bratt", "Vector", "Scarlet Overkill"], c: 2, hint: "Direction and Magnitude!" },
+            { q: "What is the name of Gru's dog?", a: ["Kyle", "Bob", "Rex", "Fang"], c: 0, hint: "A very human name for a weird dog." },
+            { q: "What was Vector's real name?", a: ["Victor", "Bob", "Herb", "Dr. Nefario"], c: 0, hint: "Just one letter different." },
+            { q: "What is the name of the bank for villains?", a: ["Bank of Evil", "Minion Bank", "Goldman Sachs", "V-Bank"], c: 0, hint: "Formerly Lehman Brothers." },
+            { q: "What is Balthazar Bratt's signature weapon?", a: ["Grit", "Expanding Bubble Gum", "Lasers", "Freeze Ray"], c: 1, hint: "Pink and sticky." },
+            { q: "What is the address of Gru's house?", a: ["123 Fake St", "122 Permission Drive", "Somewhere in Ohio", "Unknown"], c: 1, hint: "Check the mailbox carefully." },
+            // 11-20
+            { q: "What is the name of the youngest sister?", a: ["Edith", "Margo", "Agnes", "Lucy"], c: 2, hint: "She loves unicorns." },
+            { q: "What is the Minions' favorite fruit?", a: ["Apple", "Banana", "Papaya", "Gelato"], c: 1, hint: "Ba-na-na!" },
+            { q: "What is the name of Gru's twin brother?", a: ["Dru", "Bru", "Grue", "Drew"], c: 0, hint: "Rhymes with Gru." },
+            { q: "What color is Gru's scarf?", a: ["Blue and Yellow", "Grey and Black", "Pink", "Solid Black"], c: 1, hint: "Striped like a prison uniform." },
+            { q: "Who voiced Gru?", a: ["Tom Hanks", "Steve Carell", "Danny DeVito", "Will Ferrell"], c: 1, hint: "The star of The Office." },
+            { q: "What is the name of the scientist who works for Gru?", a: ["Dr. Evil", "Dr. Nefario", "Dr. Strange", "Dr. Vile"], c: 1, hint: "He's a bit hard of hearing." },
+            { q: "What animal does Gru compare the moon to?", a: ["A cheese ball", "A cookie", "A giant egg", "A white balloon"], c: 1, hint: "Something you eat with milk." },
+            { q: "What did Gru steal before the Moon?", a: ["The Eiffel Tower", "The Statue of Liberty", "The Times Square Jumbotron", "Big Ben"], c: 2, hint: "It was the 'small' one from Las Vegas." },
+            { q: "What is the name of the Anti-Villain League leader?", a: ["Silas Ramsbottom", "Arthur Sheep", "John Wick", "Director Gru"], c: 0, hint: "The Minions laugh at his last name." },
+            { q: "What turns the Minions into purple monsters?", a: ["PX-41 Serum", "Purple Rain", "Grape Juice", "The Moon Dust"], c: 0, hint: "A top-secret chemical stolen from the Arctic." },
+            // 21-30
+            { q: "Who is the villain in Despicable Me 2?", a: ["Vector", "El Macho", "Balthazar Bratt", "Scarlet Overkill"], c: 1, hint: "The most 'macho' villain of all." },
+            { q: "What is El Macho's pet animal?", a: ["A shark", "A chicken (Pollito)", "A lion", "A snake"], c: 1, hint: "A very aggressive bird." },
+            { q: "What did Lucy use to kidnap Gru?", a: ["A net", "A lipstick taser", "A sleeping gas", "A giant magnet"], c: 1, hint: "Makeup that packs a punch." },
+            { q: "What does Agnes sell to help Gru get money?", a: ["Cookies", "Her Fluffy Unicorn", "Lemonade", "Her toys"], c: 1, hint: "Her most prized possession." },
+            { q: "In the Minions movie, who is the first master they serve?", a: ["A T-Rex", "A Caveman", "Napoleon", "Dracula"], c: 0, hint: "A giant prehistoric lizard." },
+            { q: "Which Minion has two different colored eyes?", a: ["Kevin", "Stuart", "Bob", "Dave"], c: 2, hint: "The smallest and cutest one." },
+            { q: "What is the name of the 80s-themed villain in the 3rd movie?", a: ["Vector", "Balthazar Bratt", "El Macho", "Clive"], c: 1, hint: "He loves shoulder pads and keytars." },
+            { q: "What was Balthazar Bratt's TV show called?", a: ["Evil Bratt", "The Bad Boy", "Bratt Pack", "The 80s Kid"], c: 0, hint: "It was cancelled when he hit puberty." },
+            { q: "What is the name of the robot that helps Balthazar Bratt?", a: ["Clive", "C-3PO", "Robby", "Metal-Head"], c: 0, hint: "A very polite British-sounding name." },
+            { q: "What is the home city of the Anti-Villain League (AVL)?", a: ["New York", "London", "Underwater/Secret", "Paris"], c: 2, hint: "They have a giant submarine base." },
+            // 31-40
+            { q: "What does Margo sell at the beginning of the first movie?", a: ["Newspapers", "Girl Scout Cookies", "Tickets", "Magnets"], c: 1, hint: "Coconut Patties and Minty Wintergreens." },
+            { q: "What is the name of the orphanage the girls lived in?", a: ["Miss Hattie's Home for Girls", "The Sad House", "Gru's Daycare", "The Village"], c: 0, hint: "The lady who owns it is very mean." },
+            { q: "What did the Minions use to build their home in the Arctic?", a: ["Ice blocks", "Snow", "Nothing (they lived in a cave)", "Wood"], c: 2, hint: "They found a cavern after Napoleon's defeat." },
+            { q: "Who are the three main Minions in the 'Minions' movie?", a: ["Dave, Stuart, Jerry", "Kevin, Stuart, Bob", "Phil, Kevin, Tim", "Mark, Dave, Bob"], c: 1, hint: "The Leader, the Musician, and the Little One." },
+            { q: "What queen did the Minions try to steal the crown from?", a: ["Queen Elizabeth II", "Queen Victoria", "Queen Mary", "Queen Nefertiti"], c: 0, hint: "The modern British monarch." },
+            { q: "What is the name of Scarlet Overkill's husband?", a: ["Herb", "Bob", "Steve", "Victor"], c: 0, hint: "He is a very groovy inventor." },
+            { q: "What instrument does Stuart the Minion love to play?", a: ["Drums", "Piano", "Guitar (Ukulele)", "Flute"], c: 2, hint: "He wants to be a rockstar." },
+            { q: "What is the name of the 'Vicious 6' leader who was betrayed?", a: ["Wild Knuckles", "Belle Bottom", "Stronghold", "Nun-chuck"], c: 0, hint: "Gru's childhood hero." },
+            { q: "What year does the 'Minions: Rise of Gru' take place?", a: ["1976", "1985", "1990", "2000"], c: 0, hint: "The decade of disco and bell-bottoms." },
+            { q: "What is Gru's mother's name?", a: ["Marlena", "Agatha", "Linda", "Brenda"], c: 0, hint: "She is a very tough older lady." },
+            // 41-50
+            { q: "What was Gru's first invention as a child?", a: ["A Rocket", "A Freeze Ray", "A Stolen Bike", "A Cheese Ray"], c: 0, hint: "It didn't quite make it to space." },
+            { q: "Which Minion gets left behind at the AVL?", a: ["Mel", "Kevin", "Dave", "Jerry"], c: 0, hint: "He led the Minion strike in the 3rd movie." },
+            { q: "What is the name of Dru's pig?", a: ["Piggy", "Bacon", "Lucky", "Oink"], c: 2, hint: "He has one horn like a unicorn." },
+            { q: "What language do Minions speak?", a: ["Spanish", "French", "Minionese", "Latin"], c: 2, hint: "A mix of many languages like 'Banana'." },
+            { q: "EXTREME: How many Minions are estimated to be?", a: ["100", "899", "10,000", "42"], c: 1, hint: "The director mentioned a specific triple-digit number (899)." },
+            { q: "EXTREME: What did Dr. Nefario invent instead of a Jelly Gun?", a: ["Jam Gun", "P-41 Gun", "Fart Gun", "Cookie Gun"], c: 2, hint: "A stinky misunderstanding." },
+            { q: "EXTREME: Who was the original voice for Silas Ramsbottom?", a: ["Steve Coogan", "Russell Brand", "Pierre Coffin", "Chris Meledandri"], c: 0, hint: "A famous British comedian." },
+            { q: "EXTREME: What is the name of the 'Evil' Minion song?", a: ["Banana Song", "Hair Up", "Underwear Song", "I Swear Song"], c: 2, hint: "A parody of 'I Swear'." },
+            { q: "EXTREME: Which studio created the franchise?", a: ["Pixar", "Dreamworks", "Illumination", "Blue Sky"], c: 2, hint: "The logo is a Minion saying the name." },
+            { q: "EXTREME: What did Vector leave on the Moon?", a: ["His suit", "A Piranha Gun", "A cookie", "Nothing"], c: 1, hint: "He was still holding his favorite weapon." }
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+        let playerName = "";
+
+        function showSection(id) {
+            document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function openBook() {
+            const list = document.getElementById('hint-list');
+            list.innerHTML = questions.map((q, i) => `<p><strong>File #${i+1}:</strong> ${q.hint}</p>`).join('');
+            showSection('book-screen');
+        }
+
+        function startQuiz() {
+            playerName = document.getElementById('player-name').value || "Agent G";
+            score = 0;
+            currentQ = 0;
+            document.getElementById('current-score').innerText = score;
+            showSection('quiz-screen');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQ >= questions.length) {
+                showResults();
+                return;
+            }
+
+            const q = questions[currentQ];
+            document.getElementById('question-text').innerText = `${currentQ + 1}. ${q.q}`;
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+
+            q.a.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(index);
+                optionsDiv.appendChild(btn);
+            });
+
+            const progress = (currentQ / questions.length) * 100;
+            document.getElementById('progress').style.width = progress + "%";
+        }
+
+        function checkAnswer(idx) {
+            if (idx === questions[currentQ].c) {
+                score += 1;
+            } else {
+                score -= 1;
+            }
+            
+            currentQ++;
+            document.getElementById('current-score').innerText = score;
+            loadQuestion();
+        }
+
+        function showResults() {
+            showSection('result-screen');
+            const msg = document.getElementById('result-msg');
+            const stats = document.getElementById('final-stats');
+            
+            // Winning logic: Score 40 or above
+            if (score >= 10) {
+                msg.innerText = `CONGRATULATIONS (send ss.$$$), ${playerName.toUpperCase()}!`;
+                msg.style.color = "#4CAF50";
+            } else {
+                msg.innerText = `BETTER LUCK NEXT TIME (send ss), ${playerName.toUpperCase()}...`;
+                msg.style.color = "#d32f2f";
+            }
+            stats.innerText = `Final Score: ${score}`;
+        }
+    </script>
+</body>
+</html>
